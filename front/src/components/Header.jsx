@@ -1,13 +1,14 @@
 import { IoSearchOutline } from "react-icons/io5";
 import { MdAccountCircle } from "react-icons/md";
+import Logo from "./Logo";
 
 const Header = () => {
   return (
 	<div className="flex w-screen justify-center py-4">
 		<div className="flex items-center justify-between  max-w-6xl w-full bg-red">
-			<p className="text-xl cursor-pointer">Docupulse</p>
+			<Logo size="xl"/>
 			<div className="flex gap-2 items-center">
-				<label className="input">
+				<label className="input rounded-xl">
 					<IoSearchOutline/>
 					<input type="search" placeholder="Rechercher des notebooks" className="input input-sm" />
 				</label>

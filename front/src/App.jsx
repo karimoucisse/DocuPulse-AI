@@ -5,8 +5,8 @@ import Prompt from "./pages/Prompt"
 const App = () => {
   return (
     <div>
-      {/* <Home/> */}
-      <Prompt/>
+      <Home/>
+      {/* <Prompt/> */}
     </div>
   )
 }
