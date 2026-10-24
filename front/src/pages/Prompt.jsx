@@ -1,7 +1,5 @@
-import Header from "../components/Header"
 import LeftSidebar from "../components/sidebar/LeftSidebar"
 import RightSidebar from "../components/sidebar/RightSidebar"
-import Sidebar from "../components/sidebar/Sidebar"
 
 const Prompt = () => {
   return (
