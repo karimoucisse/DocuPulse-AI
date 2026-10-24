@@ -17,5 +17,15 @@ dependencies = [
     "pydantic-settings>=2.16.1",
     "pypdf>=6.21.2",
     "python-multipart>=0.0.32",
+    "ruff>=0.17.2",
     "uvicorn[standard]>=0.54.0",
 ]
+[tool.ruff]
+# Set the maximum line length to 100.
+line-length = 100
+
+[tool.ruff.lint]
+# Add the `line-too-long` rule to the enforced rule set. By default, Ruff omits rules that
+# overlap with the use of a formatter, like Black, but we can override this behavior by
+# explicitly adding the rule.
+extend-select = ["E501"]
