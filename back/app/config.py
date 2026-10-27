@@ -12,8 +12,8 @@ class Settings(BaseSettings):
     temperature: float = Field(default=0.0, ge=0.0, le=1.0)
     embedding_model: str = Field(default="nomic-embed-text")
     chat_model: str = "llama3.2:3b"
-    chroma_persist_dir: Path = "data/rag_chroma_db"
-    chroma_collection_name: str = "rag_collection"
+    vector_store_name: str = "rag_collection"
+    vector_store_path: Path = "data/rag_chroma_db"
     cors_origins: list[str] = ["http://localhost:3000"]
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="RAG_")
