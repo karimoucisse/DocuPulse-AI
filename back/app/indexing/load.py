@@ -1,43 +1,57 @@
+# from pathlib import Path
+# from typing import Annotated, Literal
+# from xml.dom.minidom import Document
+# from langchain_community.document_loaders import TextLoader, PyPDFLoader
+# from langchain_core.documents import Document
 
-from typing import Annotated, Literal
-from langchain_community.document_loaders import TextLoader, PyPDFLoader
-from app.indexing.chunk import chunk_documents
 
-SOURCE = Annotated[str,  Literal["pdf", "txt"]]
+# def exe_loader(file_path: Path, file_type: str, func: callable) -> list[Document]:
+# 	try:
+# 		loader = func(file_path, encoding="utf-8" if file_type == "txt" else "")
+# 		return loader.load()
+# 	except Exception as e:
+# 		raise ValueError(f"Error loading {file_type} file: {file_path}") from e
 
-def pdf_loader(file_path: str):
-	"""Load a PDF file and return its content as a list of documents."""
-	try:
-		loader = PyPDFLoader(file_path)
-		doc = loader.load()
-		return doc
-	except Exception as e:
-		raise ValueError(f"Error loading PDF file: {file_path}") from e
+# file_type_loader: dict[str, callable] = {
+# 	"pdf": PyPDFLoader,
+# 	"txt": TextLoader
+# }
 
-def txt_loader(file_path: str):
-	"""Load a text file and return its content as a list of documents."""
-	try:
-		loader = TextLoader(file_path)
-		doc = loader.load()
-		return doc
-	except Exception as e:
-		raise ValueError(f"Error loading text file: {file_path}") from e
+# def file_loader(file_path: Path) -> list[Document]:
+# 	"""Load a file based on its type and return its content as a list of documents."""
+# 	file_type = file_path.split(".")[-1].lower()
+# 	if file_type not in file_type_loader:
+# 		raise ValueError(f"Unsupported file type: {file_type}")
+# 	loader = file_type_loader.get(file_type)
+# 	if not loader:
+# 		raise ValueError(f"Unsupported file type: {file_type}")
+# 	return exe_loader(file_path, file_type, loader)
 
-define_loader = {
-	"pdf": pdf_loader,
-	"txt": txt_loader
+
+
+from collections.abc import Callable
+from pathlib import Path
+
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
+from langchain_core.documents import Document
+from langchain_core.document_loaders import BaseLoader
+
+LOADERS: dict[str, Callable[[Path], BaseLoader]] = {
+    ".pdf": lambda p: PyPDFLoader(str(p)),
+    ".txt": lambda p: TextLoader(str(p), encoding="utf-8"),
 }
 
-def file_loader(file_path: str):
-	"""Load a file based on its type and return its content as a list of documents."""
-	file_type = pathlib
-	loader = define_loader.get(file_type)
-	if not loader:
-		raise ValueError(f"Unsupported file type: {file_type}")
-	return loader(file_path)
 
-file_path = "data/sample.pdf"
-file_type = "pdf"
-output = file_loader(file_path, file_type)
-chunks = chunk_documents(output)
-print(f"Chunked into {len(chunks)} chunks.")
+def file_loader(file_path: str | Path) -> list[Document]:
+    """Load a file based on its type and return its content as a list of documents."""
+    path = Path(file_path)
+    suffix = path.suffix.lower()
+
+    factory = LOADERS.get(suffix)
+    if factory is None:
+        raise ValueError(f"Unsupported file type: {suffix or '(no extension)'}")
+
+    try:
+        return factory(path).load()
+    except Exception as e:
+        raise ValueError(f"Error loading {suffix} file: {path}") from e
