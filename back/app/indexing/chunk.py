@@ -1,5 +1,7 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 from app.config import get_settings
+
 
 def chunk_documents(doc):
 	"""Chunk a list of documents into smaller pieces."""
