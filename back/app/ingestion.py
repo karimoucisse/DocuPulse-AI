@@ -1,21 +1,17 @@
-from collections.abc import Callable
-from pathlib import Path
 import os
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
-from app.config import get_settings
-from app.vector_store import get_vector_store
 
+from fastapi import UploadFile
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_core.document_loaders import BaseLoader
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from fastapi import UploadFile
-# from app.errors import IngestionError
 
-
-
+from app.config import get_settings
+from app.vector_store import get_vector_store
 
 READ_BLOCK_SIZE = 1024 * 1024
 
@@ -54,6 +50,26 @@ def chunk_documents(docs: list[Document]) -> list[Document]:
 		chunk_overlap=settings.chunk_overlap,
 	)
 	docs = splitter.split_documents(docs)
+	if not docs:
+		raise ValueError("No chunks created from the provided documents.")
+	return docs
+
+def normalize_chunks(chunks: list[Document]) -> list[Document]:
+	"""Normalize chunks by ensuring each chunk has proper metadata."""
+	if not chunks:
+		raise ValueError("No chunks provided for metadata extraction.")
+	docs: list[Document] = []
+	for chunk in chunks:
+
+		metadata: dict[str, str | int] = {}
+		name = Path(chunk.metadata.get("source", "")).name
+		if not name:
+			raise ValueError("Chunk metadata missing 'source' field.")
+		metadata["source"] = name
+		if "page" in chunk.metadata:
+			metadata["page"] = chunk.metadata["page"] + 1
+		new_doc = Document(page_content=chunk.page_content, metadata=metadata)
+		docs.append(new_doc)
 	return docs
 
 
@@ -64,51 +80,26 @@ def build_chunk_ids(chunks: list[Document]) -> list[str]:
 
 	ids: list[str] = []
 	for i, chunk in enumerate(chunks):
-		page = chunk.metadata.get("page", 0)
 		source = chunk.metadata.get("source", "")
-		id = f"{source}_page_{page}_{i}"
+		if not source:
+			raise ValueError("Chunk metadata missing 'source' field.")
+		id = f"{source}_{i}"
 		ids.append(id)
 	return ids
 
 
-def add_documents_into_vector_store(chunks: list[Document]) -> Chroma:
+def add_documents_into_vector_store(docs: list[Document]) -> Chroma:
 	"""Embed a list of documents using Ollama embeddings."""
-	if not chunks:
-		raise ValueError("No chunks provided for embedding.")
+	if not docs:
+		raise ValueError("No documents provided for embedding.")
 	try:
 		vector_store = get_vector_store()
-		ids = build_chunk_ids(chunks)
-		vector_store.delete(where={"source": chunks[0].metadata.get("source", "")})
-		vector_store.add_documents(chunks, ids=ids)
+		ids = build_chunk_ids(docs)
+		vector_store.delete(where={"source": docs[0].metadata.get("source", "")})
+		vector_store.add_documents(docs, ids=ids)
 		return vector_store
 	except Exception as e:
 		raise ValueError(f"Error embedding documents: {e}") from e
-
-
-# async def upload_file(file) -> str:
-# 	"""Save an uploaded file to the designated upload directory."""
-# 	settings = get_settings()
-# 	upload_dir = Path(settings.upload_dir)
-# 	upload_dir.mkdir(parents=True, exist_ok=True)
-# 	file_name: Path = file.filename.split("/")[-1].strip()
-# 	if(not file_name):
-# 		raise ValueError("Invalid file name.")
-# 	suffix = file_name.suffix.lower()
-# 	if suffix not in LOADERS:
-# 		raise ValueError(f"Unsupported file type: {suffix or '(no extension)'}")
-# 	file_path = upload_dir / file_name
-# 	size = 0
-# 	with file_path.open("wb") as buffer:
-# 		while chunk := await file.read(1024 * 1024):
-# 			size += len(chunk)
-# 			if size > settings.max_file_size:
-# 				buffer.close()
-# 				file_path.unlink()
-# 				raise ValueError("File size exceeds the maximum allowed size.")
-# 			buffer.write(chunk)
-# 	return str(file_path)
-
-
 
 
 def _safe_file_name(raw_name: str | None) -> str:
@@ -152,9 +143,11 @@ async def upload_file(file: UploadFile) -> Path:
 
 	return destination
 
-def exec_indexing(file_path: str | Path) -> Chroma:
+
+def ingest_file(file_path: str | Path) -> int:
 	"""Load, chunk, and embed documents from a file."""
 	output = file_loader(file_path)
 	chunks = chunk_documents(output)
-	embedded = add_documents_into_vector_store(chunks)
-	return embedded
+	docs = normalize_chunks(chunks)
+	add_documents_into_vector_store(docs)
+	return len(chunks)
