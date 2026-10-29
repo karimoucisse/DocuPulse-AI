@@ -8,6 +8,9 @@ const Prompt = () => {
 		<LeftSidebar/>
 		<div className="flex flex-2 items-end p-6">
 			<textarea
+				onChange={(e) => {
+					console.log(e.target.value)
+				}}
 				maxLength="2000"
 				placeholder="Posez une question ..."
 				id="message-input"

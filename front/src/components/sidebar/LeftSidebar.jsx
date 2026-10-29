@@ -1,9 +1,10 @@
 import ImportList from "../imports/ImportList"
 import Logo from "../Logo"
 import Sidebar from "./Sidebar"
+import axios from "axios"
 
 const LeftSidebar = () => {
-	const handleFileChange = (e) => {
+	const handleFileChange = async (e) => {
 		const formData = new FormData();
 		const selectedFile = e.target.files[0]
 		formData.append(
@@ -11,8 +12,14 @@ const LeftSidebar = () => {
 			selectedFile,
 			selectedFile.name
 		);
+		const res = await axios.post("http://localhost:8000/upload", formData, {
+			headers: {
+				"Content-Type": "multipart/form-data",
+			},
+		})
+		console.log(res.data)
 	}
-	
+
   return (
 	<Sidebar>
 		<div className="space-y-4">

@@ -1,14 +1,15 @@
+from functools import lru_cache
 from textwrap import dedent
 
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnableLambda, RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough
 from langchain_ollama import ChatOllama
-from app.schemas import Source, ChatResponse
+
 from app.config import get_settings
+from app.schemas import ChatResponse, Source
 from app.vector_store import get_vector_store
-from functools import lru_cache
 
 QUOTE_MAX_LENGTH = 200
 PERTINENCE = 0.9
@@ -34,8 +35,7 @@ def build_sources(docs: list[Document]) -> list[Source]:
 		data = doc.metadata
 		data["quote"] = doc.page_content[:QUOTE_MAX_LENGTH]
 		source = Source(**data)
-		if source:
-			sources.append(source)
+		sources.append(source)
 	return sources
 
 PROMPT = ChatPromptTemplate.from_template(
@@ -85,14 +85,12 @@ def filter_chunks_by_score(docs: list[Document, float]) -> list[Document, float]
 	return [doc for doc, score in docs if score <= PERTINENCE ]
 
 
-
 def answer_question(query: str) -> ChatResponse:
 	docs = retrieve_relevant_chunks(query)
 	chunks = filter_chunks_by_score(docs)
 	if not chunks:
-		raise ValueError("No relevant documents found for the query.")
+		return {"answer": "No relevant documents found for the query.", "sources": []}
 	sources = build_sources(chunks)
 	response = generate_response(query, chunks)
-	print(response)
 	return {"answer": response, "sources": sources}
 
