@@ -6,8 +6,8 @@ REQUEST_MAX_LENGTH = 1000
 class Source(BaseModel):
 	"""A source of information for the RAG system."""
 
-	file_name: str = Field(description="The name of the source file.")
-	page_number: int | None = Field(
+	source: str = Field(description="The name of the source file.")
+	page: int | None = Field(
 		default=None,
 		ge=1,
 		description="The page number in the source file. Can be None if not applicable.",
@@ -43,6 +43,3 @@ class UploadResponse(BaseModel):
 		default=None, ge=1, description="The number of chunks in the uploaded file."
 	)
 
-
-source = Source(file_name="a.pdf", quote="x", page_number=1)
-print(source.model_dump_json(indent=2))
