@@ -10,6 +10,7 @@ class Settings(BaseSettings):
 	chunk_overlap: int = Field(default=100, ge=0)
 	top_k: int = Field(default=3, ge=1)
 	temperature: float = Field(default=0.0, ge=0.0, le=1.0)
+	ollama_url: str
 	embedding_model: str = Field(default="nomic-embed-text")
 	chat_model: str = "llama3.2:3b"
 	vector_store_name: str = "rag_collection"

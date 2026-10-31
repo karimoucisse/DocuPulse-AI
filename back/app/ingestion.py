@@ -54,13 +54,13 @@ def chunk_documents(docs: list[Document]) -> list[Document]:
 		raise ValueError("No chunks created from the provided documents.")
 	return docs
 
+
 def normalize_chunks(chunks: list[Document]) -> list[Document]:
 	"""Normalize chunks by ensuring each chunk has proper metadata."""
 	if not chunks:
 		raise ValueError("No chunks provided for metadata extraction.")
 	docs: list[Document] = []
 	for chunk in chunks:
-
 		metadata: dict[str, str | int] = {}
 		name = Path(chunk.metadata.get("source", "")).name
 		if not name:
@@ -144,7 +144,7 @@ async def upload_file(file: UploadFile) -> Path:
 	return destination
 
 
-def ingest_file(file_path: str | Path) -> int:
+async def ingest_file(file_path: UploadFile) -> int:
 	"""Load, chunk, and embed documents from a file."""
 	output = file_loader(file_path)
 	chunks = chunk_documents(output)

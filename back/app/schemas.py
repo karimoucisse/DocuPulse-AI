@@ -42,4 +42,3 @@ class UploadResponse(BaseModel):
 	chunks_count: int | None = Field(
 		default=None, ge=1, description="The number of chunks in the uploaded file."
 	)
-

@@ -5,19 +5,28 @@ import axios from "axios"
 
 const LeftSidebar = () => {
 	const handleFileChange = async (e) => {
-		const formData = new FormData();
-		const selectedFile = e.target.files[0]
-		formData.append(
-			"myFile",
-			selectedFile,
-			selectedFile.name
-		);
-		const res = await axios.post("http://localhost:8000/upload", formData, {
-			headers: {
-				"Content-Type": "multipart/form-data",
-			},
-		})
-		console.log(res.data)
+		try {
+			const formData = new FormData();
+			const selectedFile = e.target.files[0]
+			formData.append(
+				"file",
+				selectedFile,
+				selectedFile.name
+			);
+			// const res = await axios.post("http://localhost:8000/upload", formData, {
+			// 	headers: {
+			// 		"Content-Type": "multipart/form-data",
+			// 	},
+			// })
+			const res = await axios.post("http://localhost:8000/question", {question: "when was born nelson mandela?"}, {
+				headers: {
+					"Content-Type": "application/json",
+				},
+			})
+			console.log(res.data)
+		} catch (error) {
+			console.error("Error uploading file:", error);
+		}
 	}
 
   return (

@@ -4,27 +4,32 @@ from textwrap import dedent
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough
 from langchain_ollama import ChatOllama
-
+from langchain_core.runnables import Runnable
 from app.config import get_settings
 from app.schemas import ChatResponse, Source
 from app.vector_store import get_vector_store
 
 QUOTE_MAX_LENGTH = 200
-PERTINENCE = 0.9
+PERTINENCE = 0.75
 
-def retrieve_relevant_chunks(query: str) -> tuple[Document, float]:
+
+def filter_chunks_by_score(docs: list[Document, float]) -> list[Document]:
+	if not docs or min([score for doc, score in docs]) > PERTINENCE:
+		return []
+	return [doc for doc, score in docs]
+
+
+def retrieve_relevant_chunks(query: str) -> list[Document]:
 	"""Retrieve documents from the vector store based on a query."""
-	try:
-		vector_store = get_vector_store()
-		return vector_store.similarity_search_with_score(query, k=get_settings().top_k)
-	except Exception as e:
-		raise ValueError(f"Error retrieving documents: {e}") from e
+	vector_store = get_vector_store()
+	docs = vector_store.similarity_search_with_score(query, k=get_settings().top_k)
+	return filter_chunks_by_score(docs)
 
 
 def format_docs(docs: list[Document]) -> str:
 	return "\n\n".join(doc.page_content for doc in docs)
+
 
 def build_sources(docs: list[Document]) -> list[Source]:
 	"""Build a string of sources from the documents."""
@@ -38,59 +43,50 @@ def build_sources(docs: list[Document]) -> list[Source]:
 		sources.append(source)
 	return sources
 
+
 PROMPT = ChatPromptTemplate.from_template(
 	dedent(
 		"""
+
 		Answer the question based only on the following context
-		and respond from the same language as the question:
+		and nothing else, respond from the same language as the question:
+		The question and the context are delimited by <<< and >>> :
 
-		Context:
-		{context}
+		Context: <<< {context} >>>
 
-		The question is delimited by << and >> :
 
-		Question = "" {question} ""
+		Question: <<< {question} >>>
+
+		If the answer is not contained within the context,
+		say that you don't know in the proper language.
 
 		Answer:
 
-		If the answer is not contained within the context, say "I don't know".
 		"""
 	)
 )
+
 
 @lru_cache
 def get_chat_model() -> ChatOllama:
 	settings = get_settings()
 	return ChatOllama(
-		model=settings.chat_model,
-		temperature=settings.temperature,
+		model=settings.chat_model, temperature=settings.temperature, base_url=settings.ollama_url
 	)
 
-def generate_response(query: str, chunks: list[Document]) -> str:
+@lru_cache
+def get_rag_chain() -> Runnable:
 	chat = get_chat_model()
-	context = format_docs(chunks)
-	rag_chain = (
-		{
-			"context": lambda _: context,
-			"question": RunnablePassthrough(),
-		}
-		| PROMPT
-		| chat
-		| StrOutputParser()
-	)
-
-	return rag_chain.invoke(query)
-
-def filter_chunks_by_score(docs: list[Document, float]) -> list[Document, float] | None:
-	return [doc for doc, score in docs if score <= PERTINENCE ]
+	rag_chain = PROMPT | chat | StrOutputParser()
+	return rag_chain
 
 
 def answer_question(query: str) -> ChatResponse:
-	docs = retrieve_relevant_chunks(query)
-	chunks = filter_chunks_by_score(docs)
+	chunks = retrieve_relevant_chunks(query)
 	if not chunks:
-		return {"answer": "No relevant documents found for the query.", "sources": []}
+		return ChatResponse(answer="No relevant documents found for the query.", sources=[])
 	sources = build_sources(chunks)
-	response = generate_response(query, chunks)
-	return {"answer": response, "sources": sources}
-
+	context = format_docs(chunks)
+	chain = get_rag_chain()
+	response = chain.invoke({"context": context, "question": query})
+	return ChatResponse(answer=response, sources=sources)
