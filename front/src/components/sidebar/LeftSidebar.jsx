@@ -13,16 +13,16 @@ const LeftSidebar = () => {
 				selectedFile,
 				selectedFile.name
 			);
-			// const res = await axios.post("http://localhost:8000/upload", formData, {
-			// 	headers: {
-			// 		"Content-Type": "multipart/form-data",
-			// 	},
-			// })
-			const res = await axios.post("http://localhost:8000/question", {question: "when was born nelson mandela?"}, {
+			const res = await axios.post("http://localhost:8000/upload", formData, {
 				headers: {
-					"Content-Type": "application/json",
+					"Content-Type": "multipart/form-data",
 				},
 			})
+			// const res = await axios.post("http://localhost:8000/question", {question: "when was born nelson mandela?"}, {
+			// 	headers: {
+			// 		"Content-Type": "application/json",
+			// 	},
+			// })
 			console.log(res.data)
 		} catch (error) {
 			console.error("Error uploading file:", error);
