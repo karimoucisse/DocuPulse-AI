@@ -144,7 +144,7 @@ async def upload_file(file: UploadFile) -> Path:
 	return destination
 
 
-async def ingest_file(file_path: UploadFile) -> int:
+def ingest_file(file_path: UploadFile) -> int:
 	"""Load, chunk, and embed documents from a file."""
 	output = file_loader(file_path)
 	chunks = chunk_documents(output)

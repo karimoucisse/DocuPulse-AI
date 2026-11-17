@@ -10,7 +10,7 @@ const Prompt = () => {
 	const handleSendMessage = async (message) => {
 		try {
 			setMessage("");
-			const res = await axios.post("http://localhost:8000/question", {question: message}, {
+			const res = await axios.post("http://localhost:8000/question", {query: message}, {
 				headers: {
 					"Content-Type": "application/json",
 				},

@@ -4,10 +4,11 @@ from textwrap import dedent
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_ollama import ChatOllama
 from langchain_core.runnables import Runnable
+from langchain_ollama import ChatOllama
+
 from app.config import get_settings
-from app.schemas import ChatResponse, Source
+from app.schemas import ChatResponse, Source, UserQuestion
 from app.vector_store import get_vector_store
 
 QUOTE_MAX_LENGTH = 200
@@ -81,7 +82,8 @@ def get_rag_chain() -> Runnable:
 	return rag_chain
 
 
-def answer_question(query: str) -> ChatResponse:
+
+def answer_question(query: UserQuestion) -> ChatResponse:
 	chunks = retrieve_relevant_chunks(query)
 	if not chunks:
 		return ChatResponse(answer="No relevant documents found for the query.", sources=[])

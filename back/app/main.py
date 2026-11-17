@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.ingestion import ingest_file, upload_file
 from app.rag import answer_question
-from app.schemas import ChatResponse
+from app.schemas import ChatResponse, UploadResponse, UserQuestion
 
 app = FastAPI()
 settings = get_settings()
@@ -19,13 +19,14 @@ app.add_middleware(
 
 
 @app.post("/upload")
-async def upload(file: UploadFile = File):
+async def upload(file: UploadFile = File()) -> UploadResponse:
 	file_path = await upload_file(file)
-	count = await ingest_file(file_path)
-	return {f"filename: {file.filename} chunks: {count}"}
+	count =  ingest_file(file_path)
+	return UploadResponse(filename=file.filename, chunks=count)
 
 
 @app.post("/question")
-def getResponse(body: dict[str, str]):
-	res: ChatResponse = answer_question(body["question"])
+def getResponse(body: UserQuestion) -> ChatResponse:
+	res: ChatResponse = answer_question(body.query)
 	return res
+	

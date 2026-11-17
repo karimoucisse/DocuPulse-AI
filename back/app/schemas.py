@@ -38,7 +38,7 @@ class UploadResponse(BaseModel):
 	"""Represents an uploaded file with its metadata."""
 
 	model_config = ConfigDict(extra="forbid")
-	file_name: str = Field(description="The name of the uploaded file.")
-	chunks_count: int | None = Field(
+	filename: str = Field(description="The name of the uploaded file.")
+	chunks: int | None = Field(
 		default=None, ge=1, description="The number of chunks in the uploaded file."
 	)
